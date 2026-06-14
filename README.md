@@ -26,3 +26,9 @@ Optional environment variables:
 - `TEXT_MODEL`: text model id (defaults to `Qwen/Qwen2.5-7B-Instruct`).
 - `IMAGE_MODEL`: image model id (defaults to `black-forest-labs/FLUX.1-schnell`).
 - `MODAL_TEXT_ENDPOINT` / `MODAL_IMAGE_ENDPOINT`: optional custom endpoints, used before Hugging Face.
+
+## Hackathon Idea Forge
+
+This Space now includes a **Hackathon Idea Forge** tab for quickly planning multiple Build Small submissions. It generates a sprint pack of basic but high-leverage project ideas, maps each idea to a track/badge strategy, suggests small-model choices under the 32B cap, and includes a copy-paste Gradio starter app.
+
+Use it when you want to turn Hugging Face credits, ZeroGPU slots, and Modal credits into many focused submissions instead of one oversized build.
