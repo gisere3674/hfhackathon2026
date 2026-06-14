@@ -25,6 +25,71 @@ PARAMETER_TOTAL_B = sum(item[1] for item in PARAMETER_LEDGER)
 PARAMETER_LIMIT_B = 32.0
 
 
+HACKATHON_MODELS = [
+    {"name": "MiniCPM-V 4.6", "use": "OCR and visual reasoning", "params": "~1.3B", "credit": "Hugging Face ZeroGPU"},
+    {"name": "Qwen2.5-1.5B-Instruct", "use": "tiny text assistant", "params": "1.5B", "credit": "Hugging Face Inference"},
+    {"name": "SmolVLM", "use": "small image understanding", "params": "~2B", "credit": "Hugging Face ZeroGPU"},
+    {"name": "FLUX.1-schnell", "use": "fast image generation", "params": "12B", "credit": "Modal GPU endpoint"},
+    {"name": "Nemotron-Parse", "use": "structured document extraction", "params": "sub-1B", "credit": "Modal batch/runtime"},
+]
+
+PROJECT_SEEDS = [
+    ("Receipt Goblin", "photo of a receipt", "turn messy receipts into clean JSON, categories, and a tiny budget story", "Backyard AI", ["Tiny Titan", "Best Agent"]),
+    ("Grandma Form Translator", "photo of a medical or government form", "explain scary forms in plain language and make a checklist", "Backyard AI", ["Best Demo", "Tiny Titan"]),
+    ("Fridge Oracle", "photo of leftovers", "suggest three meals and a no-waste shopping note", "Backyard AI", ["Off Brand", "Tiny Titan"]),
+    ("Poster-to-Calendar", "gig poster or school flyer", "extract dates, times, venue, price, and export an .ics event", "Backyard AI", ["Best Agent"]),
+    ("Tiny Tutor Deck", "class notes", "create flashcards, quizzes, and one silly memory hook per concept", "Backyard AI", ["Tiny Titan"]),
+    ("Plant Court", "photo of a sad plant", "put the plant on trial and output a care verdict", "Thousand Token Wood", ["Judges’ Wildcard", "Off Brand"]),
+    ("Dungeon Roommate", "room photo", "invent an RPG room boss and chores-as-quests", "Thousand Token Wood", ["Off Brand", "Best Demo"]),
+    ("Bug Detective", "screenshot of an error", "explain the bug like noir detective clues and suggest first fixes", "Backyard AI", ["Best Agent"]),
+    ("Tiny Museum Labeler", "photo of any object", "write museum labels in serious, pirate, and alien curator voices", "Thousand Token Wood", ["Off Brand"]),
+    ("Voice Errand Elf", "spoken errand list", "transcribe, group by location, and make a 20-minute route", "Backyard AI", ["Best Agent"]),
+]
+
+
+def build_project_pack(count: int, style: str, use_modal: bool) -> tuple[str, str]:
+    count = max(1, min(int(count or 5), len(PROJECT_SEEDS)))
+    picks = PROJECT_SEEDS[:count]
+    lines = ["# Build Small Project Sprint Pack", "", f"Style: **{style}**", "", "Every idea stays under the 32B rule and is intentionally basic to ship fast.", ""]
+    for i, (name, inp, promise, track, badges) in enumerate(picks, 1):
+        model = HACKATHON_MODELS[(i - 1) % len(HACKATHON_MODELS)]
+        compute = "Modal endpoint for the expensive step + Gradio Space UI" if use_modal and i % 2 == 0 else model["credit"]
+        lines += [
+            f"## {i}. {name}",
+            f"- **Track:** {track}",
+            f"- **Input:** {inp}",
+            f"- **Genius hook:** {promise}.",
+            f"- **Model:** {model['name']} ({model['params']}) for {model['use']}.",
+            f"- **Compute:** {compute}",
+            f"- **README tags:** {', '.join([track, *badges])}",
+            f"- **Demo line:** I built {name}, a tiny local-first AI that can {promise}.",
+            "",
+        ]
+
+    starter_code = '''import gradio as gr
+
+def build(input_text, image=None):
+    # Replace this function with one small HF/Modal model call.
+    idea = input_text or "my messy real-life problem"
+    return {
+        "summary": f"Tiny AI result for: {idea}",
+        "next_steps": ["extract", "explain", "export"],
+        "demo_script": "Show the input, click one button, reveal a useful output.",
+    }
+
+with gr.Blocks() as demo:
+    gr.Markdown("# Tiny Build Small Starter")
+    text = gr.Textbox(label="Problem or prompt")
+    image = gr.Image(label="Optional image", type="pil")
+    out = gr.JSON(label="Result")
+    gr.Button("Build").click(build, [text, image], out)
+
+if __name__ == "__main__":
+    demo.launch()
+'''
+    return "\n".join(lines), starter_code
+
+
 
 
 def new_game(hero_name: str, seed: str) -> dict[str, Any]:
@@ -692,6 +757,22 @@ if (document.readyState === 'loading') {
 
 with gr.Blocks(title=APP_TITLE, theme=gr.themes.Soft(), css=CSS, js="""function() { document.documentElement.classList.add('dark'); }""") as demo:
     gr.HTML(HEAD_SCRIPT)
+
+    with gr.Tab("Hackathon Idea Forge"):
+        gr.Markdown("""
+        # ⚡ Build Small Idea Forge
+        Generate many tiny, shippable Hugging Face hackathon concepts with simple starter code.
+        Use this to spend HF credits, ZeroGPU slots, and Modal credits on multiple focused apps instead of one giant project.
+        """)
+        with gr.Row():
+            idea_count = gr.Slider(1, 10, value=6, step=1, label="How many projects?")
+            idea_style = gr.Radio(["basic", "pure genius", "weird but useful"], value="pure genius", label="Idea style")
+            modal_toggle = gr.Checkbox(value=True, label="Include Modal credit ideas")
+        idea_markdown = gr.Markdown()
+        starter = gr.Code(language="python", label="Basic Gradio starter code")
+        gr.Button("Generate sprint pack", variant="primary").click(
+            build_project_pack, [idea_count, idea_style, modal_toggle], [idea_markdown, starter]
+        )
     state = gr.State()
     gr.HTML(
         """
